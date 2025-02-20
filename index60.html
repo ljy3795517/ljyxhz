@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文字朗读</title>
+    <style>
+        body {
+            font-family: "KaiTi", "STKaiti", "楷体", serif;
+            margin: 0;
+            padding: 0;
+            background-color: #FFFAF0;
+            color: #333333;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .menu-bar {
+            background-color: #87CEEB;
+            padding: 15px 0;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+
+        .menu-bar button {
+            background-color: #FFFFFF;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1.2em;
+            cursor: pointer;
+            border-radius: 8px;
+            font-weight: bold;
+            color: #87CEEB;
+            transition: 0.3s;
+            margin: 0 10px;
+        }
+
+        .menu-bar button:hover {
+            background-color: #B0E0E6;
+        }
+
+        .content-area {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .display-table, .data-table {
+            width: 95vw;
+            margin: 10px auto;
+        }
+
+        .empty-row {
+            height: 1em;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #FFFFFF;
+            color: #333333;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        td {
+            border: 6px solid #B0E0E6;
+            text-align: center;
+            vertical-align: middle;
+            padding: 20px;
+        }
+
+        .word { width: 33.33%; font-size: 10em; }
+        .phrase { width: 66.66%; font-size: 5em; }
+        .sentence { font-size: 4em; }
+
+        .data-table table td {
+            font-size: 1.2em;
+            padding: 10px;
+        }
+
+        .select-button {
+            background-color: #87CEEB;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            color: #FFFFFF;
+        }
+    </style>
+</head>
+<body>
+    <div class="menu-bar">
+	<a href="index.html">返回主页</a>
+        <button id="prevButton">上一句</button>
+        <button id="prevButtonNoSpeak">上一句 (无发音)</button>
+        <button id="recordButton">录音</button>
+        <button id="nextButton">下一句</button>
+        <button id="nextButtonNoSpeak">下一句 (无发音)</button>
+        <button id="playButton">播放发音</button>
+    </div>
+
+<div class="empty-row"></div>
+
+    <div class="content-area">
+        <div class="display-table">
+            <table>
+                <tr>
+                    <td class="word" id="displayWord"></td>
+                    <td class="phrase" id="displayPhrase"></td>
+                </tr>
+                <tr>
+                    <td class="sentence" colspan="2" id="displaySentence"></td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="empty-row"></div>
+        <div class="empty-row"></div>
+        <div class="empty-row"></div>
+        <div class="empty-row"></div>
+
+        <div class="data-table">
+            <table id="dataTable">
+                <!-- 数据将在这里动态加载 -->
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let currentIndex = 0;
+        let data = [
+		{
+    "word": "一",
+    "phrase": "一天",
+    "sentence": "一天一个苹果"
+  },
+  {
+    "word": "二",
+    "phrase": "二月",
+    "sentence": "二月有春节"
+  },
+  {
+    "word": "三",
+    "phrase": "三个",
+    "sentence": "我有三个好朋友"
+  },
+  {
+    "word": "四",
+    "phrase": "四季",
+    "sentence": "一年有四季"
+  },
+  {
+    "word": "五",
+    "phrase": "五颜六色",
+    "sentence": "花园里有五颜六色的花"
+  },
+  {
+    "word": "六",
+    "phrase": "六岁",
+    "sentence": "我今年六岁了"
+  },
+  {
+    "word": "七",
+    "phrase": "七彩",
+    "sentence": "天上有七彩彩虹"
+  },
+  {
+    "word": "八",
+    "phrase": "八点",
+    "sentence": "我每天八点上学"
+  },
+  {
+    "word": "九",
+    "phrase": "九月",
+    "sentence": "九月开学真开心"
+  },
+  {
+    "word": "十",
+    "phrase": "十分",
+    "sentence": "我十分喜欢吃水果"
+  },
+  {
+    "word": "口",
+    "phrase": "大口",
+    "sentence": "小狗大口吃肉"
+  },
+  {
+    "word": "日",
+    "phrase": "日出",
+    "sentence": "太阳每天都会日出"
+  },
+  {
+    "word": "月",
+    "phrase": "月亮",
+    "sentence": "夜空中有一轮月亮"
+  },
+  {
+    "word": "水",
+    "phrase": "喝水",
+    "sentence": "每天要多喝水"
+  },
+  {
+    "word": "火",
+    "phrase": "火车",
+    "sentence": "我坐火车去看奶奶"
+  },
+  {
+    "word": "木",
+    "phrase": "树木",
+    "sentence": "公园里有很多树木"
+  },
+  {
+    "word": "土",
+    "phrase": "土地",
+    "sentence": "农民伯伯种地"
+  },
+  {
+    "word": "大",
+    "phrase": "大象",
+    "sentence": "动物园里有大象"
+  },
+  {
+    "word": "小",
+    "phrase": "小猫",
+    "sentence": "小猫喜欢喝牛奶"
+  },
+  {
+    "word": "中",
+    "phrase": "中国",
+    "sentence": "我爱中国"
+  },
+  {
+    "word": "人",
+    "phrase": "好人",
+    "sentence": "妈妈是个好人"
+  },
+  {
+    "word": "山",
+    "phrase": "大山",
+    "sentence": "我家住在大山里"
+  },
+  {
+    "word": "天",
+    "phrase": "天空",
+    "sentence": "天空很蓝很美"
+  },
+  {
+    "word": "上",
+    "phrase": "上学",
+    "sentence": "我每天都去上学"
+  },
+  {
+    "word": "下",
+    "phrase": "下雨",
+    "sentence": "下雨天要打伞"
+  },
+  {
+    "word": "左",
+    "phrase": "左手",
+    "sentence": "左手拿筷子"
+  },
+  {
+    "word": "右",
+    "phrase": "右转",
+    "sentence": "往右转就到了"
+  },
+  {
+    "word": "手",
+    "phrase": "洗手",
+    "sentence": "吃饭前要洗手"
+  },
+  {
+    "word": "足",
+    "phrase": "足球",
+    "sentence": "我喜欢踢足球"
+  },
+  {
+    "word": "目",
+    "phrase": "眼目",
+    "sentence": "要保护好眼睛"
+  },
+  {
+    "word": "耳",
+    "phrase": "耳朵",
+    "sentence": "兔子有长耳朵"
+  },
+  {
+    "word": "口",
+    "phrase": "开口",
+    "sentence": "小鸟开口唱歌"
+  },
+  {
+    "word": "心",
+    "phrase": "开心",
+    "sentence": "今天我很开心"
+  },
+  {
+    "word": "白",
+    "phrase": "白云",
+    "sentence": "白云像棉花糖"
+  },
+  {
+    "word": "田",
+    "phrase": "稻田",
+    "sentence": "稻田里有青蛙"
+  },
+  {
+    "word": "石",
+    "phrase": "石头",
+    "sentence": "河边有很多石头"
+  },
+  {
+    "word": "禾",
+    "phrase": "禾苗",
+    "sentence": "禾苗长得很好"
+  },
+  {
+    "word": "子",
+    "phrase": "孩子",
+    "sentence": "我是个好孩子"
+  },
+  {
+    "word": "女",
+    "phrase": "女孩",
+    "sentence": "她是个可爱的女孩"
+  },
+  {
+    "word": "男",
+    "phrase": "男生",
+    "sentence": "他是个聪明的男生"
+  },
+  {
+    "word": "马",
+    "phrase": "骑马",
+    "sentence": "爸爸带我去骑马"
+  },
+  {
+    "word": "牛",
+    "phrase": "奶牛",
+    "sentence": "奶牛产牛奶"
+  },
+  {
+    "word": "羊",
+    "phrase": "绵羊",
+    "sentence": "绵羊身上有毛"
+  },
+  {
+    "word": "鸟",
+    "phrase": "小鸟",
+    "sentence": "小鸟在树上唱歌"
+  },
+  {
+    "word": "虫",
+    "phrase": "蝴蝶",
+    "sentence": "蝴蝶是美丽的虫子"
+  },
+  {
+    "word": "鱼",
+    "phrase": "金鱼",
+    "sentence": "鱼缸里有金鱼"
+  },
+  {
+    "word": "草",
+    "phrase": "小草",
+    "sentence": "春天小草变绿了"
+  },
+  {
+    "word": "花",
+    "phrase": "红花",
+    "sentence": "花园里开了红花"
+  },
+  {
+    "word": "树",
+    "phrase": "大树",
+    "sentence": "大树下很凉快"
+  },
+  {
+    "word": "米",
+    "phrase": "米饭",
+    "sentence": "我爱吃米饭"
+  },
+  {
+    "word": "果",
+    "phrase": "水果",
+    "sentence": "水果对身体好"
+  },
+  {
+    "word": "菜",
+    "phrase": "蔬菜",
+    "sentence": "多吃蔬菜身体好"
+  },
+  {
+    "word": "学",
+    "phrase": "学习",
+    "sentence": "我喜欢学习"
+  },
+  {
+    "word": "文",
+    "phrase": "文字",
+    "sentence": "我会写很多文字"
+  },
+  {
+    "word": "字",
+    "phrase": "汉字",
+    "sentence": "汉字很有意思"
+  },
+  {
+    "word": "国",
+    "phrase": "中国",
+    "sentence": "我的国家是中国"
+  },
+  {
+    "word": "家",
+    "phrase": "回家",
+    "sentence": "放学后我要回家"
+  },
+  {
+    "word": "工",
+    "phrase": "工人",
+    "sentence": "爸爸是工人"
+  },
+  {
+    "word": "生",
+    "phrase": "生日",
+    "sentence": "今天是我的生日"
+  }
+        ];
+
+        function displayData() {
+            const dataTable = document.getElementById('dataTable');
+            dataTable.innerHTML = '';
+            data.forEach((item, index) => {
+                const row = dataTable.insertRow();
+                row.insertCell(0).textContent = item.word;
+                row.insertCell(1).textContent = item.phrase;
+                row.insertCell(2).textContent = item.sentence;
+                const selectCell = row.insertCell(3);
+                const selectButton = document.createElement('button');
+                selectButton.textContent = '选择';
+                selectButton.className = 'select-button';
+                selectButton.onclick = () => updateDisplayTable(index);
+                selectCell.appendChild(selectButton);
+            });
+        }
+
+        function updateDisplayTable(index) {
+            currentIndex = index;
+            const item = data[index];
+            document.getElementById('displayWord').textContent = item.word;
+            document.getElementById('displayPhrase').textContent = item.phrase;
+            document.getElementById('displaySentence').textContent = item.sentence;
+        }
+
+        document.getElementById('prevButton').addEventListener('click', () => {
+            if (currentIndex > 0) {
+                updateDisplayTable(currentIndex - 1);
+                document.getElementById('playButton').click();
+            }
+        });
+
+        document.getElementById('nextButton').addEventListener('click', () => {
+            if (currentIndex < data.length - 1) {
+                updateDisplayTable(currentIndex + 1);
+                document.getElementById('playButton').click();
+            }
+        });
+
+        // New buttons - no speech
+        document.getElementById('prevButtonNoSpeak').addEventListener('click', () => {
+            if (currentIndex > 0) {
+                updateDisplayTable(currentIndex - 1);
+            }
+        });
+
+        document.getElementById('nextButtonNoSpeak').addEventListener('click', () => {
+            if (currentIndex < data.length - 1) {
+                updateDisplayTable(currentIndex + 1);
+            }
+        });
+
+        document.getElementById('playButton').addEventListener('click', () => {
+            const text = `${data[currentIndex].word}。${data[currentIndex].phrase}。${data[currentIndex].sentence}`;
+            speakText(text);
+        });
+
+        function speakText(text) {
+            if (window.speechSynthesis) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = "zh-CN";
+                utterance.rate = 1;
+                utterance.pitch = 1;
+                speechSynthesis.speak(utterance);
+            } else {
+                alert("您的浏览器不支持语音合成功能。");
+            }
+        }
+
+        let isRecording = false;
+        let recorder;
+        let chunks = [];
+        let audio;
+        let stream;
+
+        // Initialize microphone on page load
+        window.onload = () => {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(micStream => {
+                    stream = micStream;
+                    console.log("Microphone access granted."); // Optional: Log success
+                })
+                .catch(err => {
+                    console.error("Error accessing microphone:", err);
+                    alert("请允许麦克风权限以使用录音功能。");
+                });
+        };
+
+        document.getElementById('recordButton').addEventListener('click', () => {
+            const recordButton = document.getElementById('recordButton');
+            if (!isRecording) {
+                if (stream) {
+                    recorder = new MediaRecorder(stream);
+                    recorder.ondataavailable = e => {
+                        if (e.data.size > 0) {
+                            chunks.push(e.data);
+                        }
+                    };
+                    recorder.onstop = () => {
+                        const blob = new Blob(chunks, { type: 'audio/wav' });
+                        audio = new Audio(URL.createObjectURL(blob));
+                        audio.play();
+                        chunks = [];
+                    };
+                    recorder.start();
+                } else {
+                    navigator.mediaDevices.getUserMedia({ audio: true })
+                        .then(micStream => {
+                            stream = micStream;
+                            recorder = new MediaRecorder(stream);
+                            recorder.ondataavailable = e => {
+                                if (e.data.size > 0) {
+                                    chunks.push(e.data);
+                                }
+                            };
+                            recorder.onstop = () => {
+                                const blob = new Blob(chunks, { type: 'audio/wav' });
+                                audio = new Audio(URL.createObjectURL(blob));
+                                audio.play();
+                                chunks = [];
+                            };
+                            recorder.start();
+                        })
+                        .catch(err => {
+                            console.error("无法访问麦克风:", err);
+                            alert("请检查麦克风权限。");
+                        });
+                }
+                recordButton.textContent = '停止录音';
+            } else {
+                recorder.stop();
+                recordButton.textContent = '录音';
+            }
+            isRecording = !isRecording;
+        });
+
+        // Speak selected text
+        document.addEventListener('mouseup', () => {
+            const selectedText = window.getSelection().toString().trim();
+            if (selectedText) {
+                speakText(selectedText);
+            }
+        });
+
+        displayData();
+    </script>
+</body>
+</html>

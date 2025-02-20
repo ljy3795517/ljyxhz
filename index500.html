@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文字朗读</title>
+    <style>
+        body {
+            font-family: "KaiTi", "STKaiti", "楷体", serif;
+            margin: 0;
+            padding: 0;
+            background-color: #FFFAF0;
+            color: #333333;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .menu-bar {
+            background-color: #87CEEB;
+            padding: 15px 0;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+
+        .menu-bar button {
+            background-color: #FFFFFF;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1.2em;
+            cursor: pointer;
+            border-radius: 8px;
+            font-weight: bold;
+            color: #87CEEB;
+            transition: 0.3s;
+            margin: 0 10px;
+        }
+
+        .menu-bar button:hover {
+            background-color: #B0E0E6;
+        }
+
+        .content-area {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .display-table, .data-table {
+            width: 95vw;
+            margin: 10px auto;
+        }
+
+        .empty-row {
+            height: 1em;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #FFFFFF;
+            color: #333333;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        td {
+            border: 6px solid #B0E0E6;
+            text-align: center;
+            vertical-align: middle;
+            padding: 20px;
+        }
+
+        .word { width: 33.33%; font-size: 10em; }
+        .phrase { width: 66.66%; font-size: 5em; }
+        .sentence { font-size: 4em; }
+
+        .data-table table td {
+            font-size: 1.2em;
+            padding: 10px;
+        }
+
+        .select-button {
+            background-color: #87CEEB;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            color: #FFFFFF;
+        }
+    </style>
+</head>
+<body>
+    <div class="menu-bar">
+	<a href="index.html">返回主页</a>
+        <button id="prevButton">上一句</button>
+        <button id="prevButtonNoSpeak">上一句 (无发音)</button>
+        <button id="recordButton">录音</button>
+        <button id="nextButton">下一句</button>
+        <button id="nextButtonNoSpeak">下一句 (无发音)</button>
+        <button id="playButton">播放发音</button>
+    </div>
+
+<div class="empty-row"></div>
+
+    <div class="content-area">
+        <div class="display-table">
+            <table>
+                <tr>
+                    <td class="word" id="displayWord"></td>
+                    <td class="phrase" id="displayPhrase"></td>
+                </tr>
+                <tr>
+                    <td class="sentence" colspan="2" id="displaySentence"></td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="empty-row"></div>
+        <div class="empty-row"></div>
+        <div class="empty-row"></div>
+        <div class="empty-row"></div>
+
+        <div class="data-table">
+            <table id="dataTable">
+                <!-- 数据将在这里动态加载 -->
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let currentIndex = 0;
+        let data = [
+ {"word":"面","phrase":"见面","sentence":"我今天在学校门口见到了我的好朋友。"},
+  {"word":"经","phrase":"经过","sentence":"汽车经过了长长的隧道。"},
+  {"word":"总","phrase":"总数","sentence":"这次考试的总数是多少？"},
+  {"word":"关","phrase":"关心","sentence":"妈妈很关心我的学习。"},
+  {"word":"题","phrase":"问题","sentence":"这个问题我不会做。"},
+  {"word":"度","phrase":"程度","sentence":"这件事情的严重程度超出了我的想象。"},
+  {"word":"位","phrase":"位置","sentence":"我的位置在教室的中间。"},
+  {"word":"完","phrase":"完成","sentence":"我完成了今天的作业。"},
+  {"word":"建","phrase":"建议","sentence":"我给你一个建议。"},
+  {"word":"议","phrase":"议论","sentence":"大家在议论这件事情。"},
+  {"word":"务","phrase":"任务","sentence":"我要完成老师布置的任务。"},
+  {"word":"平","phrase":"平安","sentence":"我希望你每天都平平安安的。"},
+  {"word":"报","phrase":"报告","sentence":"我向老师报告了这件事情。"},
+  {"word":"决","phrase":"决定","sentence":"我决定明天去公园玩。"},
+  {"word":"计","phrase":"计划","sentence":"我计划下个星期去北京旅游。"},
+  {"word":"术","phrase":"技术","sentence":"他的技术很棒。"},
+  {"word":"极","phrase":"积极","sentence":"我们要积极参加学校组织的活动。"},
+  {"word":"收","phrase":"收到","sentence":"我收到了你的礼物。"},
+  {"word":"华","phrase":"华丽","sentence":"这件衣服很华丽。"},
+  {"word":"联","phrase":"联系","sentence":"我和我的好朋友经常联系。"},
+  {"word":"资","phrase":"资料","sentence":"我在网上查找学习资料。"},
+  {"word":"交","phrase":"交通","sentence":"现在的交通越来越便利了。"},
+  {"word":"任","phrase":"任务","sentence":"我要完成老师交给我的任务。"},
+  {"word":"金","phrase":"金色","sentence":"我喜欢金色的阳光。"},
+  {"word":"规","phrase":"规定","sentence":"我们要遵守学校的规定。"},
+  {"word":"切","phrase":"切开","sentence":"我把苹果切开了。"},
+  {"word":"直","phrase":"直线","sentence":"这条直线很长。"},
+  {"word":"持","phrase":"坚持","sentence":"我们要坚持每天锻炼身体。"},
+  {"word":"始","phrase":"开始","sentence":"故事开始了。"},
+  {"word":"终","phrase":"终于","sentence":"我终于完成了我的梦想。"},
+  {"word":"必","phrase":"必须","sentence":"我们必须按时完成作业。"},
+  {"word":"深","phrase":"深浅","sentence":"这条河的深浅我不知道。"},
+  {"word":"何","phrase":"如何","sentence":"你知道如何解决这个问题吗？"},
+  {"word":"调","phrase":"调查","sentence":"我要调查一下这件事情。"},
+  {"word":"证","phrase":"证明","sentence":"你有什么可以证明你说的是真的吗？"},
+  {"word":"界","phrase":"世界","sentence":"世界很大，我想去看看。"},
+  {"word":"流","phrase":"流水","sentence":"河里的水在流淌。"},
+  {"word":"引","phrase":"引导","sentence":"老师引导我们学习知识。"},
+  {"word":"严","phrase":"严格","sentence":"老师对我们要求很严格。"},
+  {"word":"失","phrase":"失去","sentence":"我失去了我的铅笔。"},
+  {"word":"转","phrase":"转身","sentence":"他转过身对我说。"},
+  {"word":"份","phrase":"一份","sentence":"我吃了一份冰淇淋。"},
+  {"word":"准","phrase":"准备","sentence":"我正在准备考试。"},
+  {"word":"约","phrase":"约定","sentence":"我们约定明天一起去公园玩。"},
+  {"word":"注","phrase":"注意","sentence":"上课时我们要集中注意力。"},
+  {"word":"术","phrase":"艺术","sentence":"我喜欢学习艺术。"},
+  {"word":"该","phrase":"应该","sentence":"我们应该帮助有困难的人。"},
+  {"word":"论","phrase":"讨论","sentence":"我们一起讨论一下这个问题。"},
+  {"word":"程","phrase":"过程","sentence":"学习是一个漫长的过程。"},
+  {"word":"争","phrase":"争吵","sentence":"他们因为一件小事争吵起来。"},
+  {"word":"究","phrase":"研究","sentence":"我要研究一下这个问题。"},
+  {"word":"精","phrase":"精神","sentence":"我们要有积极向上的精神。"},
+  {"word":"断","phrase":"断开","sentence":"这根绳子断开了。"},
+  {"word":"权","phrase":"权利","sentence":"我们都有受教育的权利。"},
+  {"word":"运","phrase":"运动","sentence":"我喜欢做运动。"},
+  {"word":"历","phrase":"历史","sentence":"我对历史很感兴趣。"},
+  {"word":"较","phrase":"比较","sentence":"这两个苹果比较大。"},
+  {"word":"青","phrase":"青色","sentence":"我喜欢青色的衣服。"},
+  {"word":"增","phrase":"增加","sentence":"我们要增加学习时间。"},
+  {"word":"案","phrase":"答案","sentence":"我找到了这个问题的答案。"},
+  {"word":"史","phrase":"历史","sentence":"我喜欢学习历史。"},
+  {"word":"示","phrase":"表示","sentence":"他向我表示感谢。"},
+  {"word":"风","phrase":"风雨","sentence":"外面刮风下雨了。"},
+  {"word":"容","phrase":"容易","sentence":"这个问题很容易解决。"},
+  {"word":"请","phrase":"请求","sentence":"我请求你帮助我。"},
+  {"word":"底","phrase":"底下","sentence":"书桌底下有一本书。"},
+  {"word":"存","phrase":"存在","sentence":"这个问题一直存在。"},
+  {"word":"整","phrase":"整理","sentence":"我正在整理房间。"},
+  {"word":"支","phrase":"支持","sentence":"我支持你的决定。"},
+  {"word":"研","phrase":"研究","sentence":"我正在研究这个问题。"},
+  {"word":"各","phrase":"各自","sentence":"我们各自回家。"},
+  {"word":"划","phrase":"计划","sentence":"我计划明天去爬山。"},
+  {"word":"半","phrase":"一半","sentence":"我吃了一半苹果。"},
+  {"word":"商","phrase":"商量","sentence":"我们商量一下这个问题。"},
+  {"word":"格","phrase":"格子","sentence":"我喜欢穿格子衣服。"},
+  {"word":"般","phrase":"一般","sentence":"他长得很一般。"},
+  {"word":"确","phrase":"确定","sentence":"我确定明天去上学。"},
+  {"word":"势","phrase":"趋势","sentence":"现在的趋势是越来越多人使用手机。"},
+  {"word":"质","phrase":"质量","sentence":"这件衣服质量很好。"},
+  {"word":"变","phrase":"变化","sentence":"天气变化很快。"},
+  {"word":"团","phrase":"团结","sentence":"我们要团结友爱。"},
+  {"word":"线","phrase":"线条","sentence":"这幅画的线条很流畅。"},
+  {"word":"果","phrase":"水果","sentence":"我喜欢吃水果。"},
+  {"word":"族","phrase":"民族","sentence":"我是中国汉族人。"},
+  {"word":"丽","phrase":"美丽","sentence":"这里的风景很美丽。"},
+  {"word":"客","phrase":"客人","sentence":"我家来了客人。"},
+  {"word":"科","phrase":"科学","sentence":"我喜欢学习科学。"},
+  {"word":"待","phrase":"等待","sentence":"我在等待你的回复。"},
+  {"word":"造","phrase":"制造","sentence":"这辆汽车是中国的工厂制造的。"},
+  {"word":"视","phrase":"视力","sentence":"我的视力很好。"},
+  {"word":"基","phrase":"基础","sentence":"基础知识很重要。"},
+  {"word":"具","phrase":"具体","sentence":"你能说得具体一点吗？"},
+  {"word":"价","phrase":"价格","sentence":"这件衣服的价格很贵。"},
+  {"word":"反","phrase":"反对","sentence":"我反对你的意见。"},
+  {"word":"考","phrase":"考试","sentence":"我正在准备考试。"},
+  {"word":"据","phrase":"根据","sentence":"根据天气预报，明天会下雨。"},
+  {"word":"选","phrase":"选择","sentence":"我选择了这个苹果。"}
+ 
+        ];
+
+        function displayData() {
+            const dataTable = document.getElementById('dataTable');
+            dataTable.innerHTML = '';
+            data.forEach((item, index) => {
+                const row = dataTable.insertRow();
+                row.insertCell(0).textContent = item.word;
+                row.insertCell(1).textContent = item.phrase;
+                row.insertCell(2).textContent = item.sentence;
+                const selectCell = row.insertCell(3);
+                const selectButton = document.createElement('button');
+                selectButton.textContent = '选择';
+                selectButton.className = 'select-button';
+                selectButton.onclick = () => updateDisplayTable(index);
+                selectCell.appendChild(selectButton);
+            });
+        }
+
+        function updateDisplayTable(index) {
+            currentIndex = index;
+            const item = data[index];
+            document.getElementById('displayWord').textContent = item.word;
+            document.getElementById('displayPhrase').textContent = item.phrase;
+            document.getElementById('displaySentence').textContent = item.sentence;
+        }
+
+        document.getElementById('prevButton').addEventListener('click', () => {
+            if (currentIndex > 0) {
+                updateDisplayTable(currentIndex - 1);
+                document.getElementById('playButton').click();
+            }
+        });
+
+        document.getElementById('nextButton').addEventListener('click', () => {
+            if (currentIndex < data.length - 1) {
+                updateDisplayTable(currentIndex + 1);
+                document.getElementById('playButton').click();
+            }
+        });
+
+        // New buttons - no speech
+        document.getElementById('prevButtonNoSpeak').addEventListener('click', () => {
+            if (currentIndex > 0) {
+                updateDisplayTable(currentIndex - 1);
+            }
+        });
+
+        document.getElementById('nextButtonNoSpeak').addEventListener('click', () => {
+            if (currentIndex < data.length - 1) {
+                updateDisplayTable(currentIndex + 1);
+            }
+        });
+
+        document.getElementById('playButton').addEventListener('click', () => {
+            const text = `${data[currentIndex].word}。${data[currentIndex].phrase}。${data[currentIndex].sentence}`;
+            speakText(text);
+        });
+
+        function speakText(text) {
+            if (window.speechSynthesis) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = "zh-CN";
+                utterance.rate = 1;
+                utterance.pitch = 1;
+                speechSynthesis.speak(utterance);
+            } else {
+                alert("您的浏览器不支持语音合成功能。");
+            }
+        }
+
+        let isRecording = false;
+        let recorder;
+        let chunks = [];
+        let audio;
+        let stream;
+
+        // Initialize microphone on page load
+        window.onload = () => {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(micStream => {
+                    stream = micStream;
+                    console.log("Microphone access granted."); // Optional: Log success
+                })
+                .catch(err => {
+                    console.error("Error accessing microphone:", err);
+                    alert("请允许麦克风权限以使用录音功能。");
+                });
+        };
+
+        document.getElementById('recordButton').addEventListener('click', () => {
+            const recordButton = document.getElementById('recordButton');
+            if (!isRecording) {
+                if (stream) {
+                    recorder = new MediaRecorder(stream);
+                    recorder.ondataavailable = e => {
+                        if (e.data.size > 0) {
+                            chunks.push(e.data);
+                        }
+                    };
+                    recorder.onstop = () => {
+                        const blob = new Blob(chunks, { type: 'audio/wav' });
+                        audio = new Audio(URL.createObjectURL(blob));
+                        audio.play();
+                        chunks = [];
+                    };
+                    recorder.start();
+                } else {
+                    navigator.mediaDevices.getUserMedia({ audio: true })
+                        .then(micStream => {
+                            stream = micStream;
+                            recorder = new MediaRecorder(stream);
+                            recorder.ondataavailable = e => {
+                                if (e.data.size > 0) {
+                                    chunks.push(e.data);
+                                }
+                            };
+                            recorder.onstop = () => {
+                                const blob = new Blob(chunks, { type: 'audio/wav' });
+                                audio = new Audio(URL.createObjectURL(blob));
+                                audio.play();
+                                chunks = [];
+                            };
+                            recorder.start();
+                        })
+                        .catch(err => {
+                            console.error("无法访问麦克风:", err);
+                            alert("请检查麦克风权限。");
+                        });
+                }
+                recordButton.textContent = '停止录音';
+            } else {
+                recorder.stop();
+                recordButton.textContent = '录音';
+            }
+            isRecording = !isRecording;
+        });
+
+        // Speak selected text
+        document.addEventListener('mouseup', () => {
+            const selectedText = window.getSelection().toString().trim();
+            if (selectedText) {
+                speakText(selectedText);
+            }
+        });
+
+        displayData();
+    </script>
+</body>
+</html>
